@@ -4,16 +4,23 @@ import Data.List (elemIndex, sort, isPrefixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import Debug.Trace (trace)
-import Foreign (free)
+
+class FileSystemNode a where
+   size :: a -> Integer
 
 data File = File String Integer deriving (Show)
+instance FileSystemNode File where
+   size (File _ size) = size
 
 data Directory = Directory [String] [File] [Directory] Integer deriving (Show)
-
 instance Eq Directory where
    (Directory nameA _ _ _ ) == (Directory nameB _ _ _) = nameA == nameB
 instance Ord Directory where
    compare (Directory nameA _ _ _ ) (Directory nameB _ _ _) = compare (length nameA) (length nameB)
+instance FileSystemNode Directory where
+   size (Directory _ _ _ size) = size
+
+
 
 
 part1 :: [String] -> String
@@ -62,8 +69,7 @@ assignSubDirs parents subs = map (\(Directory path files _ _) -> let
 
 calcSize :: [File] -> [Directory] -> Integer
 calcSize files dirs =
-   (sum (map (\(File _ size) -> size)files)) +
-    (sum (map (\(Directory _ _ _ size) -> size)dirs))
+   sum (map size files) + sum (map size dirs)
 
 flattenDirs :: [Directory] -> [Directory]
 flattenDirs [] = []
@@ -79,6 +85,3 @@ part2 lines = let
    subs = concatMap (\  (Directory _ _ dirs _) -> flattenDirs dirs) rootDir
    sizes = map size $ filter ((>=needed) . size) subs 
    in show $ minimum sizes
-
-size :: Directory -> Integer
-size (Directory _ _ _ size) = size
